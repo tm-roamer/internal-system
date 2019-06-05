@@ -1,0 +1,387 @@
+<template>
+  <div class="page-customer">
+    <div class="app-page-container">
+      <!--查询条件-->
+      <div class="app-page-box">
+        <div class="app-page-box-header">
+          <i class="icon iconfont icon-shaixuan"></i>查询条件
+        </div>
+        <div class="app-page-box-content clearfix">
+          <el-form :inline="true" :model="searchForm" class="app-form-clear-margin-bottom">
+            <el-form-item label="类型">
+              <el-radio-group v-model="searchForm.status" @change="search">
+                <el-radio label="all">全部</el-radio>
+                <el-radio label="clue">线索</el-radio>
+                <el-radio label="important">重要</el-radio>
+                <el-radio label="blacklist">黑名单</el-radio>
+              </el-radio-group>
+            </el-form-item>
+            <!--<el-form-item label="日期">-->
+              <!--<el-input v-model="searchForm.name" @keyup.enter.native="search" placeholder="请输入漏洞名称"></el-input>-->
+            <!--</el-form-item>-->
+            <el-form-item>
+              <el-button type="primary" @click="search">查询</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+      </div>
+
+      <!-- 列表 -->
+      <div class="app-page-box">
+        <!-- 表格 -->
+        <el-table
+          stripe
+          border
+          style="width: 100%"
+          v-loading="loading"
+          :data="tableData"
+          @sort-change="handleSortChange">
+          <el-table-column type="index" fixed width="50" align="center"></el-table-column>
+          <el-table-column prop="name" fixed label="客户名称" sortable>
+            <template slot-scope="scope">{{ scope.row.name }}</template>
+          </el-table-column>
+          <el-table-column prop="phone" label="手机号" sortable>
+            <template slot-scope="scope">{{ scope.row.phone }}</template>
+          </el-table-column>
+          <el-table-column prop="weixin" label="微信" sortable>
+            <template slot-scope="scope">{{ scope.row.weixin }}</template>
+          </el-table-column>
+          <el-table-column prop="follow" label="跟踪人" sortable>
+            <template slot-scope="scope">{{ scope.row.follow || '?' }}</template>
+          </el-table-column>
+          <el-table-column prop="description" label="描述" sortable>
+            <template slot-scope="scope">{{ scope.row.description }}</template>
+          </el-table-column>
+          <el-table-column prop="date" label="日期" sortable>
+            <template slot-scope="scope">{{ scope.row.date }}</template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" sortable>
+            <template slot-scope="scope">{{ scope.row.status }}</template>
+          </el-table-column>
+          <el-table-column label="操作" align="center" width="150px" fixed="right">
+            <template slot-scope="scope">
+              <el-button type="text" @click="editConfirm('update', scope.row)">修改</el-button>
+              <div class="operation-line"></div>
+              <el-button type="text" @click="del(scope.row)" class="text-color-red">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <!-- 分页 -->
+        <div class="app-pagination">
+          <el-pagination
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :current-page="currentPage"
+            :total="total"
+            :page-sizes="pageSizes"
+            :page-size="pageSize"
+            layout="total, sizes, prev, pager, next, jumper">
+          </el-pagination>
+        </div>
+      </div>
+
+      <!-- 新增 & 编辑 dialog -->
+      <el-dialog class="edit-dialog" width="40%" append-to-body @close="resetEditForm()" :title="editDialogDisplayTitle"
+                 :visible.sync="editDialogVisible">
+
+        <el-form status-icon label-width="95px"
+                 :model="editForm" :rules="editFormRules" ref="editForm">
+          <el-form-item label="漏洞名称:" prop="name">
+            <el-input v-model="editForm.name"></el-input>
+          </el-form-item>
+          <el-form-item label="CVE编号:" prop="cve_code">
+            <el-input v-model="editForm.cve_code"></el-input>
+          </el-form-item>
+          <el-form-item label="CNVD编号:" prop="cnvd_code">
+            <el-input v-model="editForm.cnvd_code"></el-input>
+          </el-form-item>
+          <el-form-item label="发布日期:" prop="publish_time">
+            <el-date-picker
+              v-model="editForm.publish_time"
+              value-format="yyyy-MM-dd"
+              type="date"
+              placeholder="选择日期">
+            </el-date-picker>
+          </el-form-item>
+          <el-form-item label="威胁等级:" prop="threat_level">
+            <el-radio-group v-model="editForm.threat_level">
+              <el-radio :label="1">低</el-radio>
+              <el-radio :label="2">中</el-radio>
+              <el-radio :label="3">高</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="影响产品:" prop="affects">
+            <el-input v-model="editForm.affects"></el-input>
+          </el-form-item>
+          <el-form-item label="漏洞解决方案:" prop="repair_plan">
+            <el-input v-model="editForm.repair_plan"></el-input>
+          </el-form-item>
+          <el-form-item label="厂商补丁:" prop="patch">
+            <el-input v-model="editForm.patch"></el-input>
+          </el-form-item>
+          <el-form-item label="参考链接:" prop="url">
+            <el-input v-model="editForm.url"></el-input>
+          </el-form-item>
+          <el-form-item label="漏洞描述:" prop="desc">
+            <el-input type="textarea" :rows="6" v-model="editForm.desc"></el-input>
+          </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+          <el-button type="info" @click="editDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="editBtnLoading" @click="editSave()">保存</el-button>
+        </span>
+      </el-dialog>
+
+    </div>
+  </div>
+</template>
+
+<script>
+  import moment from 'moment';
+  import {getTimeRange} from '@/lib/util';
+  export default {
+    name: "customer",
+    data() {
+
+      // 自定义验证 是否重名
+      let validateRename = (rule, value, callback) => {
+        let display = {name: '漏洞名称', cnvd_code: 'CNVD编号'};
+        // 编辑情况下, 过滤自己的名字
+        if (this.editDialogType === 'update') {
+          if (this.editRow[rule.field] === value) {
+            return callback();
+          }
+        }
+        this.$post('/action', {
+          data: {
+            "select": this.tableName,
+            "where": rule.field + '=' + value,
+            "fields": ["name"]
+          }
+        }, true).then((data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            callback(new Error(display[rule.field] + ' ' + value + ' 已存在, 请更换' + display[rule.field] + '重试'))
+          } else {
+            callback();
+          }
+        })
+      };
+
+      return {
+        dict: {
+          level: {
+            "1": "低",
+            "2": "中",
+            "3": "高"
+          }
+        },
+        // 查询
+        searchForm: {
+          status: 'all',
+        },
+        // 新增 & 编辑
+        editRow: {},                  // 编辑时当前临时记录
+        editForm: {},
+        editDialogVisible: false,     // 编辑弹出框显示状态
+        editBtnLoading: false,        // 编辑弹出框的保存按钮的loading
+        editDialogType: "",           // 编辑弹出框的当前状态, 是编辑, 还是新增
+        editDialogDisplayTitle: "",   // 编辑弹出框的标题
+        editDialogDisplay: {          // 编辑弹出框的标题映射
+          "insert": "新增",
+          "update": "编辑"
+        },
+        //表单验证
+        editFormRules: {
+          name: [
+            {required: true, message: '字段不能为空', trigger: 'blur'},
+            {validator: validateRename, trigger: 'blur'},
+          ],
+          cnvd_code: [
+            {required: true, message: '字段不能为空', trigger: 'blur'},
+            {validator: validateRename, trigger: 'blur'},
+          ],
+          threat_level: [
+            {required: true, message: '字段不能为空', trigger: 'change'}
+          ]
+        },
+        //详情弹窗
+        detailLoading: false,
+        detailDialogVisible: false,
+        detailForm: {},
+        // 列表相关
+        loading: false,
+        tableData: [],
+        join: [],
+        total: 0,
+        pageSize: 50,
+        pageSizes: [50, 100, 200, 500],
+        currentPage: 1,
+        multipleSelection: []
+      }
+    },
+    methods: {
+      // 查询
+      search() {
+        this.currentPage = 1
+        this.list()
+      },
+      // tab切换
+      handleTabClick(tab, event) {
+
+      },
+      // 新增 & 编辑
+      editConfirm(type, row) {
+        this.editDialogVisible = true;
+        this.editDialogType = type;
+        this.editDialogDisplayTitle = this.editDialogDisplay[type];
+        if (type === 'update') {
+          this.detail(row);
+        }
+      },
+      // 保存事件
+      editSave() {
+        this[this.editDialogType]();
+      },
+      // 更新时查询单条
+      detail(row) {
+        this.editForm = row
+        this.editRow = row
+      },
+      // 更新
+      update() {
+        // 表单验证
+        this.$refs["editForm"].validate((valid) => {
+          if (valid) {
+            this.editForm.last_update_time = this.$filter.datetime(Date.now() ,'YYYY-MM-DD HH:mm:ss');
+            this.editBtnLoading = true;
+            this.$post('/action', {
+              data: {
+                "update": this.tableName,
+                "values": this.editForm,
+                "where": 'id=' + this.editForm.id
+              }
+            }, true).then((data) => {
+              if (data && data.count === 1) {
+                this.editBtnLoading = false;
+                this.editDialogVisible = false;
+                this.$message({message: '更新成功', type: 'success'});
+                this.list();
+              }
+            })
+          }
+        });
+      },
+      // 表单重置
+      resetEditForm() {
+        let editForm = this.$refs["editForm"];
+        editForm.clearValidate();
+        editForm.resetFields();
+        this.editForm = {}
+        this.editRow = {}
+      },
+      // 排序
+      handleSortChange(column) {
+        // console.log(column, prop, order);
+        this.order = column.prop && column.order
+          ? [column.prop + ' ' + column.order.replace("ending", "")]
+          : [];
+        this.list();
+      },
+      // 修改分页数量
+      handleSizeChange(val) {
+        this.pageSize = val;
+        this.list();
+      },
+      // 切换分页
+      handleCurrentChange(val) {
+        this.currentPage = val;
+        this.list();
+      },
+      // 列表
+      list() {
+        this.$post('/action', {
+          data: {
+            "select": this.tableName,
+            "join": this.join,
+            "limit": [(this.currentPage - 1) * this.pageSize, this.currentPage * this.pageSize],
+            "where": this.searchForm.name ? [`name%=%${this.searchForm.name}%`] : [],
+            "order": this.order
+          }
+        }).then((data) => {
+          if (data && Array.isArray(data.data)) {
+            this.total = data.total;
+            this.tableData = data.data;
+          }
+        })
+      },
+      formatLevel(val) {
+        return this.dict.level[val]
+      },
+      // 详情
+      openDetail(row) {
+        this.detailForm = row
+        this.detailDialogVisible = true;
+      },
+      // 重置
+      resetSyncForm(formName) {
+      },
+      // 同步 - 批量
+      syncTimeChange(time) {
+        if (time && time[0] && time[1]) {
+          this.syncBtnDisabled = false
+        } else {
+          this.syncBtnDisabled = true
+        }
+      },
+      syncBatch() {
+        let time = this.syncForm.time || []
+        if (time[0] && time[1]) {
+          this.$confirm(`确定同步吗?`, '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'info'
+          }).then(() => {
+            this.$post('/star/sync/knowladge', {
+              data: {
+                startTime: time[0],
+                endTime: time[1]
+              }
+            }).then((data) => {
+              this.$message({message: '同步成功', type: 'success'});
+              this.syncBtnDisabled = true
+              this.syncForm.time = null
+              this.list();
+            })
+          }).catch(() => {});
+        }
+      },
+      // 同步 - 单条
+      sync(row) {
+        this.$confirm(`确定同步 ${row.cnvd_code} 吗?`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'info'
+        }).then(() => {
+          this.$post('/star/sync/knowladge/' + row.cnvd_code, {
+            data: {}
+          }).then((data) => {
+            this.$message({message: '同步成功', type: 'success'});
+            this.list();
+          })
+        }).catch(() => {});
+      },
+      // 加载
+      load() {
+        // this.list();
+      }
+    },
+    mounted() {
+      this.load();
+    }
+  }
+</script>
+
+<style>
+  .page-customer {
+  }
+</style>
