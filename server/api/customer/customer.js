@@ -1,19 +1,34 @@
+const fs = require('fs');
+const path = require('path');
 const Router = require("koa-router");
 const router = Router();
 
+// 获取 数据文件
+function getList() {
+	let file = fs.readFileSync(path.resolve(__dirname, '../../data/customer.json'), 'utf-8');
+	let list = JSON.parse(file.toString());
+	return list
+}
+
+// 写入 数据文件
+function writeList(list) {
+	fs.writeFileSync(path.resolve(__dirname, '../../data/customer.json'), list, 'utf-8');
+}
+
 router.post('/query', function (ctx, next) {
 	ctx.set('Content-Type', 'application/json');
-	var data = {
+	let list = getList()
+	let data = {
 		code: 200,
 		message: 'ok',
-		data: {}
+		data: list
 	};
 	ctx.body = JSON.stringify(data);
 });
 
 router.post('/update', function (ctx, next) {
 	ctx.set('Content-Type', 'application/json');
-	var data = {
+	let data = {
 		code: 200,
 		message: 'ok',
 		data: {}
@@ -23,17 +38,26 @@ router.post('/update', function (ctx, next) {
 
 router.post('/insert', function (ctx, next) {
 	ctx.set('Content-Type', 'application/json');
-	var data = {
+	let list = getList()
+	let id = list.length + 1
+	list.push({
+		id: id,
+		...ctx.request.body
+	})
+	writeList(JSON.stringify(list, 4, 4))
+	let data = {
 		code: 200,
 		message: 'ok',
-		data: {}
+		data: {
+			id: id
+		}
 	};
 	ctx.body = JSON.stringify(data);
 });
 
 router.post('/delete', function (ctx, next) {
 	ctx.set('Content-Type', 'application/json');
-	var data = {
+	let data = {
 		code: 200,
 		message: 'ok',
 		data: {}

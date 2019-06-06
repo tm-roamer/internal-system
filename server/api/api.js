@@ -1,6 +1,6 @@
 const Router = require("koa-router");
 const router = Router();
-// const alarmProcess = require('../security/alarm/alarmProcess')
+const customer = require('./customer/customer')
 
 router.post('/action', function (ctx, next) {
 	ctx.set('Content-Type', 'application/json');
@@ -45,7 +45,6 @@ router.post('/customer', function (ctx, next) {
 	ctx.body = JSON.stringify(data);
 });
 
+router.use('/customer', customer.routes());
 
-
-// router.use('/alarm', alarmProcess.routes());
 exports = module.exports = router;

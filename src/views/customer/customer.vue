@@ -26,6 +26,13 @@
         </div>
       </div>
 
+      <!-- 按钮组 -->
+      <div class="app-page-box">
+        <div class="app-page-box-content clearfix">
+          <el-button type="success" @click="editConfirm('insert')">新增</el-button>
+        </div>
+      </div>
+
       <!-- 列表 -->
       <div class="app-page-box">
         <!-- 表格 -->
@@ -52,11 +59,13 @@
           <el-table-column prop="description" label="描述" sortable>
             <template slot-scope="scope">{{ scope.row.description }}</template>
           </el-table-column>
-          <el-table-column prop="date" label="日期" sortable>
+          <el-table-column prop="date" label="登记日期" sortable>
             <template slot-scope="scope">{{ scope.row.date }}</template>
           </el-table-column>
           <el-table-column prop="status" label="状态" sortable>
-            <template slot-scope="scope">{{ scope.row.status }}</template>
+            <template slot-scope="scope">
+              {{ dict.status[scope.row.status || 'clue'] }}
+            </template>
           </el-table-column>
           <el-table-column label="操作" align="center" width="150px" fixed="right">
             <template slot-scope="scope">
@@ -81,49 +90,39 @@
       </div>
 
       <!-- 新增 & 编辑 dialog -->
-      <el-dialog class="edit-dialog" width="40%" append-to-body @close="resetEditForm()" :title="editDialogDisplayTitle"
+      <el-dialog class="edit-dialog" width="600px" append-to-body @close="resetEditForm()" :title="editDialogDisplayTitle"
                  :visible.sync="editDialogVisible">
 
         <el-form status-icon label-width="95px"
                  :model="editForm" :rules="editFormRules" ref="editForm">
-          <el-form-item label="漏洞名称:" prop="name">
-            <el-input v-model="editForm.name"></el-input>
+          <el-form-item label="客户名称:" prop="name">
+            <el-input v-model="editForm.name" clearable></el-input>
           </el-form-item>
-          <el-form-item label="CVE编号:" prop="cve_code">
-            <el-input v-model="editForm.cve_code"></el-input>
+          <el-form-item label="手机号:" prop="phone">
+            <el-input v-model="editForm.phone" clearable></el-input>
           </el-form-item>
-          <el-form-item label="CNVD编号:" prop="cnvd_code">
-            <el-input v-model="editForm.cnvd_code"></el-input>
+          <el-form-item label="微信号:" prop="微信">
+            <el-input v-model="editForm.weixin" clearable></el-input>
           </el-form-item>
-          <el-form-item label="发布日期:" prop="publish_time">
-            <el-date-picker
-              v-model="editForm.publish_time"
-              value-format="yyyy-MM-dd"
-              type="date"
-              placeholder="选择日期">
-            </el-date-picker>
+          <el-form-item label="跟踪人:" prop="follow">
+            <el-select v-model="editForm.follow" clearable placeholder="请选择">
+              <el-option label="田明" value="田明"></el-option>
+              <el-option label="何英杰" value="何英杰"></el-option>
+              <el-option label="张雪原" value="张雪原"></el-option>
+              <el-option label="李尊怡" value="李尊怡"></el-option>
+              <el-option label="李亚玲" value="李亚玲"></el-option>
+              <el-option label="周耀东" value="周耀东"></el-option>
+            </el-select>
           </el-form-item>
-          <el-form-item label="威胁等级:" prop="threat_level">
-            <el-radio-group v-model="editForm.threat_level">
-              <el-radio :label="1">低</el-radio>
-              <el-radio :label="2">中</el-radio>
-              <el-radio :label="3">高</el-radio>
+          <el-form-item label="状态:" prop="status">
+            <el-radio-group v-model="editForm.status">
+              <el-radio label="clue">线索</el-radio>
+              <el-radio label="important">重要</el-radio>
+              <el-radio label="blacklist">黑名单</el-radio>
             </el-radio-group>
           </el-form-item>
-          <el-form-item label="影响产品:" prop="affects">
-            <el-input v-model="editForm.affects"></el-input>
-          </el-form-item>
-          <el-form-item label="漏洞解决方案:" prop="repair_plan">
-            <el-input v-model="editForm.repair_plan"></el-input>
-          </el-form-item>
-          <el-form-item label="厂商补丁:" prop="patch">
-            <el-input v-model="editForm.patch"></el-input>
-          </el-form-item>
-          <el-form-item label="参考链接:" prop="url">
-            <el-input v-model="editForm.url"></el-input>
-          </el-form-item>
-          <el-form-item label="漏洞描述:" prop="desc">
-            <el-input type="textarea" :rows="6" v-model="editForm.desc"></el-input>
+          <el-form-item label="描述:" prop="description">
+            <el-input type="textarea" clearable :rows="6" v-model="editForm.description"></el-input>
           </el-form-item>
         </el-form>
         <span slot="footer" class="dialog-footer">
@@ -138,7 +137,6 @@
 
 <script>
   import moment from 'moment';
-  import {getTimeRange} from '@/lib/util';
   export default {
     name: "customer",
     data() {
@@ -169,10 +167,10 @@
 
       return {
         dict: {
-          level: {
-            "1": "低",
-            "2": "中",
-            "3": "高"
+          status: {
+            "clue": "线索",
+            "important": "重要",
+            "blacklist": "黑名单"
           }
         },
         // 查询
@@ -181,7 +179,10 @@
         },
         // 新增 & 编辑
         editRow: {},                  // 编辑时当前临时记录
-        editForm: {},
+        editForm: {
+          "follow": "田明",
+          "status": "clue"
+        },
         editDialogVisible: false,     // 编辑弹出框显示状态
         editBtnLoading: false,        // 编辑弹出框的保存按钮的loading
         editDialogType: "",           // 编辑弹出框的当前状态, 是编辑, 还是新增
@@ -194,20 +195,14 @@
         editFormRules: {
           name: [
             {required: true, message: '字段不能为空', trigger: 'blur'},
-            {validator: validateRename, trigger: 'blur'},
           ],
-          cnvd_code: [
+          follow: [
+            {required: true, message: '字段不能为空', trigger: 'change'},
+          ],
+          description: [
             {required: true, message: '字段不能为空', trigger: 'blur'},
-            {validator: validateRename, trigger: 'blur'},
-          ],
-          threat_level: [
-            {required: true, message: '字段不能为空', trigger: 'change'}
           ]
         },
-        //详情弹窗
-        detailLoading: false,
-        detailDialogVisible: false,
-        detailForm: {},
         // 列表相关
         loading: false,
         tableData: [],
@@ -244,8 +239,30 @@
       },
       // 更新时查询单条
       detail(row) {
-        this.editForm = row
         this.editRow = row
+        this.editForm = JSON.parse(JSON.stringify(row))
+      },
+      // 新增
+      insert() {
+        // 表单验证
+        this.$refs["editForm"].validate((valid) => {
+          if (valid) {
+            this.editForm.date = this.$filter.datetime(Date.now() ,'YYYY-MM-DD HH:mm:ss');
+            this.editBtnLoading = true;
+            this.$post('/customer/insert', {
+              data: this.editForm
+            }, true).then((data) => {
+              if (data && data.id > 0) {
+                this.editBtnLoading = false;
+                this.editDialogVisible = false;
+                this.$message({message: '新增成功', type: 'success'});
+                this.list();
+              }
+            }).catch(err => {
+              this.$message({message: '新增失败', type: 'error'});
+            })
+          }
+        });
       },
       // 更新
       update() {
@@ -297,23 +314,6 @@
         this.currentPage = val;
         this.list();
       },
-      // 列表
-      list() {
-        this.$post('/action', {
-          data: {
-            "select": this.tableName,
-            "join": this.join,
-            "limit": [(this.currentPage - 1) * this.pageSize, this.currentPage * this.pageSize],
-            "where": this.searchForm.name ? [`name%=%${this.searchForm.name}%`] : [],
-            "order": this.order
-          }
-        }).then((data) => {
-          if (data && Array.isArray(data.data)) {
-            this.total = data.total;
-            this.tableData = data.data;
-          }
-        })
-      },
       formatLevel(val) {
         return this.dict.level[val]
       },
@@ -322,57 +322,20 @@
         this.detailForm = row
         this.detailDialogVisible = true;
       },
-      // 重置
-      resetSyncForm(formName) {
-      },
-      // 同步 - 批量
-      syncTimeChange(time) {
-        if (time && time[0] && time[1]) {
-          this.syncBtnDisabled = false
-        } else {
-          this.syncBtnDisabled = true
-        }
-      },
-      syncBatch() {
-        let time = this.syncForm.time || []
-        if (time[0] && time[1]) {
-          this.$confirm(`确定同步吗?`, '提示', {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'info'
-          }).then(() => {
-            this.$post('/star/sync/knowladge', {
-              data: {
-                startTime: time[0],
-                endTime: time[1]
-              }
-            }).then((data) => {
-              this.$message({message: '同步成功', type: 'success'});
-              this.syncBtnDisabled = true
-              this.syncForm.time = null
-              this.list();
-            })
-          }).catch(() => {});
-        }
-      },
-      // 同步 - 单条
-      sync(row) {
-        this.$confirm(`确定同步 ${row.cnvd_code} 吗?`, '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'info'
-        }).then(() => {
-          this.$post('/star/sync/knowladge/' + row.cnvd_code, {
-            data: {}
-          }).then((data) => {
-            this.$message({message: '同步成功', type: 'success'});
-            this.list();
-          })
-        }).catch(() => {});
+      // 列表
+      list() {
+        this.$post('/customer/query', {
+          data: {}
+        }).then((data) => {
+          if (data && Array.isArray(data)) {
+            this.total = data.length;
+            this.tableData = data;
+          }
+        })
       },
       // 加载
       load() {
-        // this.list();
+        this.list();
       }
     },
     mounted() {

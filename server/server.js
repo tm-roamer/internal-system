@@ -34,7 +34,6 @@ router.use('*', function (ctx, next) {
 // 处理请求
 app.use(bodyParser());
 
-// router.use('/api/loginuser',loginUser.routes());		// 登录
 router.use('/api', api.routes());											// api
 
 app.use(router['routes']());
