@@ -140,11 +140,11 @@
 
 /*tiptop*/
 .el-tooltip__popper.is-dark{
-  background: #f65555;
+  /*background: #f65555;*/
 }
 
 .el-tooltip__popper[x-placement^="right"] .popper__arrow{
-  border-right-color: #f65555;
+  /*border-right-color: #f65555;*/
 }
 
 /*dialog*/

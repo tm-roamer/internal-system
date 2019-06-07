@@ -21,17 +21,22 @@ router.post('/query', function (ctx, next) {
 	let data = {
 		code: 200,
 		message: 'ok',
-		data: list
+		data: list.reverse()
 	};
 	ctx.body = JSON.stringify(data);
 });
 
 router.post('/update', function (ctx, next) {
 	ctx.set('Content-Type', 'application/json');
+	let list = getList()
+	let id = ctx.request.body.id
+	let index = list.findIndex(f => f.id === id)
+	list[index] = ctx.request.body
+	writeList(JSON.stringify(list, 4, 4))
 	let data = {
 		code: 200,
 		message: 'ok',
-		data: {}
+		data: ctx.request.body
 	};
 	ctx.body = JSON.stringify(data);
 });
@@ -57,6 +62,11 @@ router.post('/insert', function (ctx, next) {
 
 router.post('/delete', function (ctx, next) {
 	ctx.set('Content-Type', 'application/json');
+	let list = getList()
+	let id = ctx.request.body.id
+	let index = list.findIndex(f => f.id === id)
+	list.splice(index, 1)
+	writeList(JSON.stringify(list, 4, 4))
 	let data = {
 		code: 200,
 		message: 'ok',

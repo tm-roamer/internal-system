@@ -56,22 +56,22 @@
           <el-table-column prop="follow" label="跟踪人" sortable>
             <template slot-scope="scope">{{ scope.row.follow || '?' }}</template>
           </el-table-column>
-          <el-table-column prop="description" label="描述" sortable>
+          <el-table-column prop="description" show-overflow-tooltip label="描述" sortable>
             <template slot-scope="scope">{{ scope.row.description }}</template>
           </el-table-column>
           <el-table-column prop="date" label="登记日期" sortable>
             <template slot-scope="scope">{{ scope.row.date }}</template>
           </el-table-column>
-          <el-table-column prop="status" label="状态" sortable>
+          <el-table-column prop="status" width="80px" label="状态" sortable>
             <template slot-scope="scope">
-              {{ dict.status[scope.row.status || 'clue'] }}
+              <span :class="scope.row.status">{{ dict.status[scope.row.status || 'clue'] }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" width="150px" fixed="right">
+          <el-table-column label="操作" align="center" width="100px" fixed="right">
             <template slot-scope="scope">
               <el-button type="text" @click="editConfirm('update', scope.row)">修改</el-button>
               <div class="operation-line"></div>
-              <el-button type="text" @click="del(scope.row)" class="text-color-red">删除</el-button>
+              <el-button type="text" @click="delConfirm(scope.row)" class="text-color-red">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -204,12 +204,13 @@
           ]
         },
         // 列表相关
-        loading: false,
+        loading: true,
         tableData: [],
+        tableDataAll: [],
         join: [],
         total: 0,
-        pageSize: 50,
-        pageSizes: [50, 100, 200, 500],
+        pageSize: 100,
+        pageSizes: [100, 200, 300, 500],
         currentPage: 1,
         multipleSelection: []
       }
@@ -259,6 +260,7 @@
                 this.list();
               }
             }).catch(err => {
+              this.editBtnLoading = false;
               this.$message({message: '新增失败', type: 'error'});
             })
           }
@@ -269,21 +271,19 @@
         // 表单验证
         this.$refs["editForm"].validate((valid) => {
           if (valid) {
-            this.editForm.last_update_time = this.$filter.datetime(Date.now() ,'YYYY-MM-DD HH:mm:ss');
             this.editBtnLoading = true;
-            this.$post('/action', {
-              data: {
-                "update": this.tableName,
-                "values": this.editForm,
-                "where": 'id=' + this.editForm.id
-              }
+            this.$post('/customer/update', {
+              data: this.editForm
             }, true).then((data) => {
-              if (data && data.count === 1) {
+              if (data && data.id > 0) {
                 this.editBtnLoading = false;
                 this.editDialogVisible = false;
                 this.$message({message: '更新成功', type: 'success'});
                 this.list();
               }
+            }).catch(err => {
+              this.editBtnLoading = false;
+              this.$message({message: '更新失败', type: 'error'});
             })
           }
         });
@@ -295,6 +295,23 @@
         editForm.resetFields();
         this.editForm = {}
         this.editRow = {}
+      },
+      // 删除框
+      delConfirm(row) {
+        this.$confirm('确定删除该条记录吗?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          this.$post('/customer/delete', {
+            data: {
+              id: row.id
+            }
+          }, true).then((data) => {
+            this.$message({message: '删除成功', type: 'success'});
+            this.list();
+          });
+        }).catch(() => {});
       },
       // 排序
       handleSortChange(column) {
@@ -314,14 +331,6 @@
         this.currentPage = val;
         this.list();
       },
-      formatLevel(val) {
-        return this.dict.level[val]
-      },
-      // 详情
-      openDetail(row) {
-        this.detailForm = row
-        this.detailDialogVisible = true;
-      },
       // 列表
       list() {
         this.$post('/customer/query', {
@@ -332,6 +341,28 @@
             this.tableData = data;
           }
         })
+      },
+      // 列表
+      list() {
+        this.$post('/customer/query', {
+          data: {}
+        }).then((data) => {
+          if (data && Array.isArray(data)) {
+            this.total = data.length;
+            this.tableDataAll = JSON.parse(JSON.stringify(data));
+            this.page()
+          }
+        })
+      },
+      // 分页
+      page() {
+        let list = this.tableDataAll
+        if (this.searchForm.status !== 'all') {
+          list = list.filter(d => {
+            return d.status === this.searchForm.status
+          })
+        }
+        this.tableData = list.slice((this.currentPage - 1) * this.pageSize, this.currentPage * this.pageSize)
       },
       // 加载
       load() {
@@ -346,5 +377,18 @@
 
 <style>
   .page-customer {
+
+  }
+  .page-customer .el-table__row .clue {
+    background-color: #20a0ff;
+    color: #fff;
+  }
+  .page-customer .el-table__row .important {
+    background-color: red;
+    color: #fff;
+  }
+  .page-customer .el-table__row .blacklist {
+    background-color: #585858;
+    color: #f5f5f5;
   }
 </style>
